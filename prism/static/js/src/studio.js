@@ -1,9 +1,12 @@
 /* Javascript for PrismXBlock. */
 function PrismXBlockEditBlock(runtime, element) {
     var $element = $(element);
+    var notify;
 
     var lngSelect = document.getElementById('language');
     var thmSelect = document.getElementById('theme');
+
+    notify = typeof(runtime.notify) != 'undefined';
 
     var codeMirror = CodeMirror.fromTextArea(document.querySelectorAll('textarea#code-textarea')[0], {
         lineNumbers: true,
@@ -23,11 +26,26 @@ function PrismXBlockEditBlock(runtime, element) {
             maxheight: $(element).find('input[name=maxheight]').val(),
 
         };
-        runtime.notify('save', {state: 'start'});
-        $.post(handlerUrl, JSON.stringify(data)).done(function(response) {
-        runtime.notify('save', {state: 'end'});
-        // console.log(data)
-        });
+
+        if (notify){
+            runtime.notify('save', {state: 'start'});
+        }
+    
+       $.ajax({
+           type: "POST",
+           url: handlerUrl,
+           data: JSON.stringify(data),
+           success: function(result) {
+               if (result.result === 'success' && notify){
+                   runtime.notify('save', {state: 'end'})
+               } else if (notify){
+                   runtime.notify('error', {
+                       'title': 'Error saving Prism component',
+                       'message': 'Error: '+result.result
+                   });
+               }
+           }
+       });
     });
 
     $(element).find('.cancel-button').bind('click', function() {
